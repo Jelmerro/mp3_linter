@@ -1,0 +1,2 @@
+stagger==1.0.0
+pillow==8.0.1
