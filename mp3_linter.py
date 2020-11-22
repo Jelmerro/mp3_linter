@@ -4,9 +4,10 @@ import os
 import re
 import shutil
 import warnings
-from PIL import Image
 
+from PIL import Image
 import stagger
+from tinytag import TinyTag as tinytag
 warnings.filterwarnings("ignore")
 
 SONG_FIELDS = set(["TIT2", "TPE1", "APIC", "TYER"])
@@ -167,6 +168,7 @@ def collection_filename(mp3, tag, level, depth):
 
 
 def filesystem_checks(siblings, mp3, tag):
+    fixable = []
     issues = []
     # Check for the correct amount of tracks in the folder
     total_tracks = getattr(tag, "track_total")
@@ -180,10 +182,14 @@ def filesystem_checks(siblings, mp3, tag):
     tracks_with_current_number = len([
         s for s in siblings if os.path.basename(s).startswith(current_track)
     ])
-    if getattr(tag, "album") and tracks_with_current_number != 1:
-        issues.append(
-            f"Found {tracks_with_current_number} tracks with "
-            "current track number, but expected exactly 1")
+    if getattr(tag, "album"):
+        if tracks_with_current_number == 0:
+            fixable.append(
+                "No tracks with current track number, but expected exactly 1")
+        if tracks_with_current_number > 1:
+            issues.append(
+                f"Found {tracks_with_current_number} tracks with "
+                "current track number, but expected exactly 1")
     # Check for filename
     artist = tag.artist.replace("/", "|")
     title = tag.title.replace("/", "|")
@@ -204,7 +210,8 @@ def filesystem_checks(siblings, mp3, tag):
     base_dir = os.path.dirname(mp3)
     for level in range(0, 7):
         if os.path.basename(base_dir).startswith("!"):
-            return issues, collection_filename(mp3, tag, level, folder_count)
+            expected = collection_filename(mp3, tag, level, folder_count)
+            return expected, issues, fixable
         base_dir = os.path.dirname(base_dir)
     # Return expected filename and check for incorrect artist folder
     expected = os.path.join(artist_path, expected)
@@ -214,14 +221,13 @@ def filesystem_checks(siblings, mp3, tag):
             "File might not be stored in the right artist folder:\n"
             f"    folder:  {fol}\n    artist:  {artist}\n    title:   {title}")
     if mp3 == expected:
-        return issues, None
-    return issues, expected
+        return None, issues, fixable
+    return expected, issues, fixable
 
 
 def run_checks(siblings, mp3, tag, fix=False):
     issues = []
     fixable = []
-    fields = set()
     # Incorrect ID3 tag version
     if tag.version != 3:
         issues.append(f"Incorrect tag version {tag.version}")
@@ -234,18 +240,8 @@ def run_checks(siblings, mp3, tag, fix=False):
     tag, cover_issues, cover_fixable = cover_art_checks(tag, fix)
     issues.extend(cover_issues)
     fixable.extend(cover_fixable)
-    # Check for an incorrect amount of values and keep a list of present fields
-    for field in tag.values():
-        fields.add(field.__dict__["frameid"])
-        if field.__dict__["frameid"] in TEXT_FIELDS:
-            if field.__dict__["frameid"] == "TALB" and getattr(tag, "album"):
-                if not field.__dict__["text"]:
-                    issues.append("Empty value set for {}".format(
-                        TEXT_FIELDS[field.__dict__["frameid"]]))
-                if len(field.__dict__["text"]) > 1:
-                    issues.append("Multiple values for {}".format(
-                        TEXT_FIELDS[field.__dict__["frameid"]]))
     # Compare fields that are present compared to the expected set of fields
+    fields = set(field.__dict__["frameid"] for field in tag.values())
     incorrect = SONG_FIELDS ^ fields
     missing = SONG_FIELDS & incorrect
     redundant = incorrect - SONG_FIELDS
@@ -255,19 +251,21 @@ def run_checks(siblings, mp3, tag, fix=False):
         redundant = incorrect - ALBUM_SONG_FIELDS
     for miss in missing:
         issues.append(f"Missing required {miss} field")
-    for red in redundant:
-        fixable.append(f"Redundant field {red} present")
+    for redu in redundant:
+        fixable.append(f"Redundant field {redu} present")
         if fix:
             for field in redundant:
                 if field in tag:
                     del tag[field]
     # Checks for the file location and being stored next to the right files
-    fs_issues, filename = filesystem_checks(siblings, mp3, tag)
+    filename, fs_issues, fs_fixable = filesystem_checks(siblings, mp3, tag)
     issues.extend(fs_issues)
+    fixable.extend(fs_fixable)
+    # Check that the bitrate is exactly 320 kbps
     # Write fixes to file, return the list of issues and the number of fixes
     if fixable and fix:
         tag.write()
-    return issues, fixable, filename
+    return issues, fixable, filename, tinytag.get(mp3).bitrate or 320
 
 
 def main(folder, exclusions, fix=False):
@@ -278,6 +276,7 @@ def main(folder, exclusions, fix=False):
     total_unreadable = 0
     total_issues = 0
     total_fixable = 0
+    total_bitrate = 0
     unsafe_file_moves = 0
     safe_file_moves = 0
     for mp3 in files:
@@ -291,7 +290,8 @@ def main(folder, exclusions, fix=False):
         siblings = [
             f for f in files if os.path.dirname(f) == os.path.dirname(mp3)
         ]
-        issues, fixable, new_location = run_checks(siblings, mp3, tag, fix)
+        issues, fixable, new_location, bitrate = run_checks(
+            siblings, mp3, tag, fix)
         if new_location:
             if issues:
                 unsafe_file_moves += 1
@@ -310,7 +310,7 @@ def main(folder, exclusions, fix=False):
                 cprint(mp3, "blue")
                 cprint("should be ", "green" if not issues else "yellow", "")
                 cprint(new_location, "purple")
-        if not new_location and (issues or fixable):
+        if not new_location and (issues or fixable or bitrate != 320):
             cprint(mp3, "blue")
         if issues:
             for issue in issues:
@@ -318,10 +318,13 @@ def main(folder, exclusions, fix=False):
         if fixable:
             for f in fixable:
                 cprint(f"  - {f}", "green")
-        if new_location or issues or fixable:
+        if bitrate != 320:
+            cprint(f"  - Bitrate isn't 320 kbps but only {bitrate}", "blue")
+        if new_location or issues or fixable or bitrate != 320:
             print("\n")
         total_issues += len(issues)
         total_fixable += len(fixable)
+        total_bitrate += bitrate
     grand_total = total_issues + total_fixable + total_unreadable
     grand_total += safe_file_moves + unsafe_file_moves
     if grand_total:
@@ -364,12 +367,17 @@ def main(folder, exclusions, fix=False):
             cprint(
                 f"- There are {safe_file_moves} files that can be moved "
                 "with `--fix` automatically", "purple")
+    if total_files - total_unreadable > 0:
+        average_bitrate = total_bitrate / (total_files - total_unreadable)
+        cprint(
+            f"- The files have an average bitrate of {average_bitrate:3.3f}",
+            "blue")
     print()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Opinionated/consistent ID3 linter & fixer using stagger")
+        description="Opinionated & consistent ID3 linter & fixer")
     parser.add_argument("folder", help="Folder to search for mp3 files")
     parser.add_argument(
         "--exclude", nargs="+", help="Folders to ignore when linting/fixing")
