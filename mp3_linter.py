@@ -270,7 +270,7 @@ def run_checks(siblings, mp3, tag, fix=False, skip_artist_folder=False):
     return issues, fixable, filename, tinytag.get(mp3).bitrate or 320
 
 
-def main(folder, exclusions, fix=False, skip_artist_folder=False):
+def start(folder, exclusions, fix=False, skip_artist_folder=False):
     files = sorted(glob.glob(f"{folder}**/*.mp3", recursive=True))
     for exc in exclusions:
         files = [f for f in files if not f.startswith(os.path.abspath(exc))]
@@ -377,7 +377,7 @@ def main(folder, exclusions, fix=False, skip_artist_folder=False):
     print()
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(
         description="Opinionated & consistent ID3 linter & fixer")
     parser.add_argument("folder", help="Folder to search for mp3 files")
@@ -390,4 +390,8 @@ if __name__ == "__main__":
         "--fix", action="store_true",
         help="Automatically fix all the fixable issues and rename the files")
     args = parser.parse_args()
-    main(args.folder, args.exclude or [], args.fix, args.skip_artist_folder)
+    start(args.folder, args.exclude or [], args.fix, args.skip_artist_folder)
+
+
+if __name__ == "__main__":
+    main()
