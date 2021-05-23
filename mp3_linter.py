@@ -49,21 +49,21 @@ def album_checks(tag, fix):
     fixable = []
     disc_track_fields = {"TRCK": "track", "TPOS": "disc"}
     for field in tag.values():
-        if field.__dict__["frameid"] in disc_track_fields:
-            if len(field.__dict__["text"]) != 1:
+        frame_id = field.__dict__["frameid"]
+        if frame_id in disc_track_fields:
+            text = field.__dict__["text"]
+            if len(text) != 1:
                 fixable.append("Multiple {} number values".format(
-                    disc_track_fields[field.__dict__["frameid"]]))
+                    disc_track_fields[frame_id]))
                 if fix:
-                    tag[field.__dict__["frameid"]] = field. \
-                        __dict__["text"][0]
+                    tag[frame_id] = text[0]
                     tag.write()
-            if field.__dict__["text"][0].startswith("0"):
+            if text[0].startswith("0"):
                 fixable.append("Zero padded {} number".format(
-                    disc_track_fields[field.__dict__["frameid"]]))
+                    disc_track_fields[frame_id]))
                 if fix:
-                    tag[field.__dict__["frameid"]] = field. \
-                        __dict__["text"][0].replace("0", "", 1)
-            if "/" not in field.__dict__["text"][0]:
+                    tag[frame_id] = text[0].replace("0", "", 1)
+            if "/" not in text[0]:
                 issues.append("No total {} specified".format(
                     disc_track_fields[field.__dict__["frameid"]]))
     return tag, issues, fixable
@@ -167,7 +167,7 @@ def collection_filename(mp3, tag, level, depth):
     return None
 
 
-def filesystem_checks(siblings, mp3, tag):
+def filesystem_checks(siblings, mp3, tag, skip_artist_folder=False):
     fixable = []
     issues = []
     # Check for the correct amount of tracks in the folder
@@ -217,15 +217,16 @@ def filesystem_checks(siblings, mp3, tag):
     expected = os.path.join(artist_path, expected)
     fol = os.path.basename(artist_path)
     if fol.lower() not in artist.lower() and fol.lower() not in title.lower():
-        issues.append(
-            "File might not be stored in the right artist folder:\n"
-            f"    folder:  {fol}\n    artist:  {artist}\n    title:   {title}")
+        if not skip_artist_folder:
+            issues.append(
+                "File might not be stored in the right artist folder:\n    "
+                f"folder:  {fol}\n    artist:  {artist}\n    title:   {title}")
     if mp3 == expected:
         return None, issues, fixable
     return expected, issues, fixable
 
 
-def run_checks(siblings, mp3, tag, fix=False):
+def run_checks(siblings, mp3, tag, fix=False, skip_artist_folder=False):
     issues = []
     fixable = []
     # Incorrect ID3 tag version
@@ -258,7 +259,8 @@ def run_checks(siblings, mp3, tag, fix=False):
                 if field in tag:
                     del tag[field]
     # Checks for the file location and being stored next to the right files
-    filename, fs_issues, fs_fixable = filesystem_checks(siblings, mp3, tag)
+    filename, fs_issues, fs_fixable = filesystem_checks(
+        siblings, mp3, tag, skip_artist_folder)
     issues.extend(fs_issues)
     fixable.extend(fs_fixable)
     # Check that the bitrate is exactly 320 kbps
@@ -268,8 +270,8 @@ def run_checks(siblings, mp3, tag, fix=False):
     return issues, fixable, filename, tinytag.get(mp3).bitrate or 320
 
 
-def main(folder, exclusions, fix=False):
-    files = sorted(glob.glob("{}**/*.mp3".format(folder), recursive=True))
+def main(folder, exclusions, fix=False, skip_artist_folder=False):
+    files = sorted(glob.glob(f"{folder}**/*.mp3", recursive=True))
     for exc in exclusions:
         files = [f for f in files if not f.startswith(os.path.abspath(exc))]
     total_files = len(files)
@@ -291,7 +293,7 @@ def main(folder, exclusions, fix=False):
             f for f in files if os.path.dirname(f) == os.path.dirname(mp3)
         ]
         issues, fixable, new_location, bitrate = run_checks(
-            siblings, mp3, tag, fix)
+            siblings, mp3, tag, fix, skip_artist_folder)
         if new_location:
             if issues:
                 unsafe_file_moves += 1
@@ -382,7 +384,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--exclude", nargs="+", help="Folders to ignore when linting/fixing")
     parser.add_argument(
+        "--skip-artist-folder", action="store_true",
+        help="Skip the suggestion for storing the artist in the right folder")
+    parser.add_argument(
         "--fix", action="store_true",
         help="Automatically fix all the fixable issues and rename the files")
     args = parser.parse_args()
-    main(args.folder, args.exclude or [], args.fix)
+    main(args.folder, args.exclude or [], args.fix, args.skip_artist_folder)
