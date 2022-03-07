@@ -7,7 +7,7 @@ import warnings
 
 from PIL import Image
 import stagger
-from tinytag import TinyTag as tinytag
+from tinytag import TinyTag
 warnings.filterwarnings("ignore")
 
 SONG_FIELDS = set(["TIT2", "TPE1", "APIC", "TYER"])
@@ -267,7 +267,7 @@ def run_checks(siblings, mp3, tag, fix=False, skip_artist_folder=False):
     # Write fixes to file, return the list of issues and the number of fixes
     if fixable and fix:
         tag.write()
-    return issues, fixable, filename, tinytag.get(mp3).bitrate or 320
+    return issues, fixable, filename, TinyTag.get(mp3).bitrate or 320
 
 
 def start(folder, exclusions, fix=False, skip_artist_folder=False):
