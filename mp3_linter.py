@@ -1,9 +1,9 @@
 import argparse
-import glob
 import os
 import re
 import shutil
 import warnings
+from glob import glob
 
 from PIL import Image
 import stagger
@@ -271,7 +271,8 @@ def run_checks(siblings, mp3, tag, fix=False, skip_artist_folder=False):
 
 
 def start(folder, exclusions, fix=False, skip_artist_folder=False):
-    files = sorted(glob.glob(f"{folder}**/*.mp3", recursive=True))
+    files = sorted(glob("**/*.mp3", root_dir=folder, recursive=True))
+    files = [os.path.join(folder, f) for f in files]
     for exc in exclusions:
         files = [f for f in files if not f.startswith(os.path.abspath(exc))]
     total_files = len(files)
