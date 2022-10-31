@@ -8,8 +8,12 @@ setup(
     license="MIT",
     py_modules=["mp3_linter"],
     include_package_data=True,
-    python_requires=">= 3.5.*",
+    python_requires=">= 3.7.*",
     setup_requires=["setuptools"],
-    install_requires=["pillow", "stagger", "tinytag"],
+    install_requires=[
+        "pillow",
+        "stagger @ git+ssh://git@github.com/Jelmerro/stagger@master",
+        "tinytag"
+    ],
     entry_points={"console_scripts": ["mp3_linter= mp3_linter:main"]}
 )
