@@ -12,7 +12,7 @@ setup(
     setup_requires=["setuptools"],
     install_requires=[
         "pillow",
-        "stagger @ git+ssh://git@github.com/Jelmerro/stagger@master",
+        "stagger @ git+https://git@github.com/Jelmerro/stagger@master",
         "tinytag"
     ],
     entry_points={"console_scripts": ["mp3_linter= mp3_linter:main"]}
