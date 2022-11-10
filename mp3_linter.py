@@ -212,6 +212,9 @@ def filesystem_checks(siblings, mp3, tag, skip_artist_folder=False):
         if os.path.basename(base_dir).startswith("!"):
             expected = collection_filename(mp3, tag, level, folder_count)
             return expected, issues, fixable
+        if os.path.basename(base_dir) == "various artists":
+            expected = collection_filename(mp3, tag, level, folder_count)
+            return expected, issues, fixable
         base_dir = os.path.dirname(base_dir)
     # Return expected filename and check for incorrect artist folder
     expected = os.path.join(artist_path, expected)
@@ -391,7 +394,8 @@ def main():
         "--fix", action="store_true",
         help="Automatically fix all the fixable issues and rename the files")
     args = parser.parse_args()
-    start(args.folder, args.exclude or [], args.fix, args.skip_artist_folder)
+    folder = os.path.abspath(os.path.expanduser(args.folder))
+    start(folder, args.exclude or [], args.fix, args.skip_artist_folder)
 
 
 if __name__ == "__main__":
