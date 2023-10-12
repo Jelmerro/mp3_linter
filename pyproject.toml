@@ -1,6 +1,6 @@
 [project]
 name="mp3_linter"
-version="0.2.0"
+version="0.3.0"
 authors=[{name="Jelmer van Arnhem"}]
 description="Opinionated & consistent ID3 linter & fixer"
 license={text="MIT"}

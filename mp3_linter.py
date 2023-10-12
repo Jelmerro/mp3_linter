@@ -240,6 +240,19 @@ def run_checks(siblings, mp3, tag, fix=False, skip_artist_folder=False):
         tag, album_issues, album_fixable = album_checks(tag, fix)
         issues.extend(album_issues)
         fixable.extend(album_fixable)
+    # Title character checks
+    for field in tag.values():
+        if "text" in field.__dict__:
+            name = field.__dict__["frameid"]
+            for char in ["‘", "’"]:
+                if len(field.__dict__["text"]) > 0:
+                    text = field.__dict__["text"][0]
+                    if char in text:
+                        fixable.append(
+                            f"Incorrect character {char} found in "
+                            f"{name} field: {text}")
+                        if fix:
+                            tag[name] = text.replace(char, "'")
     # Cover art checks
     tag, cover_issues, cover_fixable = cover_art_checks(tag, fix)
     issues.extend(cover_issues)
