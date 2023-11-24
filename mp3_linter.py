@@ -24,6 +24,7 @@ COLORS = {
     "purple": "\x1b[35m"
 }
 END = "\x1b[0m"
+CHAR_REPLACEMENTS = [["‘", "'"], ["’", "'"], ["–", "-"]]
 APPNAME = os.path.basename(__file__.replace(".py", ""))
 
 
@@ -219,6 +220,8 @@ def filesystem_checks(siblings, mp3, tag, skip_artist_folder=False):
         base_dir = os.path.dirname(base_dir)
     # Return expected filename and check for incorrect artist folder
     expected = os.path.join(artist_path, expected)
+    for char in CHAR_REPLACEMENTS:
+        expected = expected.replace(char[0], char[1])
     fol = os.path.basename(artist_path)
     if fol.lower() not in artist.lower() and fol.lower() not in title.lower():
         if not skip_artist_folder:
@@ -245,15 +248,15 @@ def run_checks(siblings, mp3, tag, fix=False, skip_artist_folder=False):
     for field in tag.values():
         if "text" in field.__dict__:
             name = field.__dict__["frameid"]
-            for char in ["‘", "’"]:
+            for char in CHAR_REPLACEMENTS:
                 if len(field.__dict__["text"]) > 0:
                     text = field.__dict__["text"][0]
-                    if char in text:
+                    if char[0] in text:
                         fixable.append(
                             f"Incorrect character {char} found in "
                             f"{name} field: {text}")
                         if fix:
-                            tag[name] = text.replace(char, "'")
+                            tag[name] = text.replace(char[0], char[1])
     # Cover art checks
     tag, cover_issues, cover_fixable = cover_art_checks(tag, fix)
     issues.extend(cover_issues)
