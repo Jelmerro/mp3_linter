@@ -14,6 +14,7 @@ SONG_FIELDS = set(["TIT2", "TPE1", "APIC", "TYER"])
 ALBUM_SONG_FIELDS = set([
     "TIT2", "TPE1", "APIC", "TYER", "TRCK", "TALB", "TPOS"
 ])
+OPTIONAL_FIELDS = ["TDAT"]
 TEXT_FIELDS = ["TALB", "TYER", "TIT2", "TPE1"]
 COLORS = {
     "red": "\x1b[31m",
@@ -269,6 +270,8 @@ def run_checks(siblings, mp3, tag, fix=False, skip_artist_folder=False):
     for miss in missing:
         issues.append(f"Missing required {miss} field")
     for redu in redundant:
+        if redu in OPTIONAL_FIELDS:
+            continue
         fixable.append(f"Redundant field {redu} present")
         if fix:
             for field in redundant:
