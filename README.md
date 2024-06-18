@@ -13,8 +13,7 @@ Opinionated & consistent ID3 linter & fixer
 ## Install
 
 ```bash
-git clone https://github.com/Jelmerro/mp3_linter.git
-pip3 install --user --upgrade ./mp3_linter
+pip install --user -I git+https://github.com/Jelmerro/mp3_linter
 ```
 
 ## Usage
