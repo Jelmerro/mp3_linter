@@ -1,16 +1,18 @@
 [project]
 name="mp3_linter"
-version="0.4.0"
+version="0.5.0"
 authors=[{name="Jelmer van Arnhem"}]
 description="Opinionated & consistent ID3 linter & fixer"
 license={text="MIT"}
 requires-python=">=3.7"
 dependencies= [
-    "pillow",
+    "pillow >= 10.1.0, < 11",
     "stagger @ git+https://git@github.com/Jelmerro/stagger@master",
-    "tinytag"
+    "tinytag >= 1.10.1, < 2"
 ]
 [tool.setuptools]
 include-package-data=true
+[project.urls]
+Repository="https://github.com/Jelmerro/mp3_linter"
 [project.scripts]
 mp3_linter="mp3_linter:main"

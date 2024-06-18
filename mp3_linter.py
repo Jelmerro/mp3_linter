@@ -123,7 +123,8 @@ def cover_art_checks(tag, fix):
             with Image.open(temp_file) as img:
                 temp_file = f"/tmp/{APPNAME}.jpg"
                 if too_big:
-                    img = img.resize((700, 700), resample=Image.LANCZOS)
+                    img = img.resize(
+                        (700, 700), resample=Image.Resampling.LANCZOS)
                 if img.mode in ["RGBA", "P"]:
                     img = img.convert("RGB")
                 img.save(temp_file, 'jpeg', quality=95)
