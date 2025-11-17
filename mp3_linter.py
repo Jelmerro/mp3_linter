@@ -8,7 +8,6 @@ from glob import glob
 
 from PIL import Image
 import stagger
-from tinytag import TinyTag
 warnings.filterwarnings("ignore")
 
 SONG_FIELDS = set(["TIT2", "TPE1", "APIC", "TYER"])
@@ -291,7 +290,7 @@ def run_checks(siblings, mp3, tag, fix=False, skip_artist_folder=False):
     # Write fixes to file, return the list of issues and the number of fixes
     if fixable and fix:
         tag.write()
-    return issues, fixable, filename, TinyTag.get(mp3).bitrate or 320
+    return issues, fixable, filename, tag.bitrate or 320, tag.is_vbr
 
 
 def start(folder, exclusions, fix=False, skip_artist_folder=False):
@@ -317,27 +316,27 @@ def start(folder, exclusions, fix=False, skip_artist_folder=False):
         siblings = [
             f for f in files if os.path.dirname(f) == os.path.dirname(mp3)
         ]
-        issues, fixable, new_location, bitrate = run_checks(
+        issues, fixable, new_loc, bitrate, is_vbr = run_checks(
             siblings, mp3, tag, fix, skip_artist_folder)
-        if new_location:
+        if new_loc:
             if issues:
                 unsafe_file_moves += 1
             else:
                 safe_file_moves += 1
             if fix and not issues:
-                os.makedirs(os.path.dirname(new_location), exist_ok=True)
-                shutil.move(mp3, new_location)
+                os.makedirs(os.path.dirname(new_loc), exist_ok=True)
+                shutil.move(mp3, new_loc)
                 walk_and_remove_empty(mp3)
                 cprint("previously ", "green", "")
                 cprint(mp3, "blue")
                 cprint("moved to   ", "green", "")
-                cprint(new_location, "purple")
+                cprint(new_loc, "purple")
             else:
                 cprint("currently ", "green" if not issues else "yellow", "")
                 cprint(mp3, "blue")
                 cprint("should be ", "green" if not issues else "yellow", "")
-                cprint(new_location, "purple")
-        if not new_location and (issues or fixable or bitrate != 320):
+                cprint(new_loc, "purple")
+        if not new_loc and (issues or fixable or bitrate != 320 or is_vbr):
             cprint(mp3, "blue")
         if issues:
             for issue in issues:
@@ -345,9 +344,12 @@ def start(folder, exclusions, fix=False, skip_artist_folder=False):
         if fixable:
             for f in fixable:
                 cprint(f"  - {f}", "green")
-        if bitrate != 320:
-            cprint(f"  - Bitrate isn't 320 kbps but only {bitrate}", "blue")
-        if new_location or issues or fixable or bitrate != 320:
+        if bitrate != 320 or is_vbr:
+            if is_vbr:
+                cprint(f"  - Bitrate isn't 320 kbps but {bitrate} vbr", "blue")
+            else:
+                cprint(f"  - Bitrate isn't 320 kbps but {bitrate}", "blue")
+        if new_loc or issues or fixable or bitrate != 320 or is_vbr:
             print("\n")
         total_issues += len(issues)
         total_fixable += len(fixable)

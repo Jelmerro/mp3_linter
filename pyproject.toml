@@ -7,8 +7,7 @@ license={text="MIT"}
 requires-python=">=3.9"
 dependencies=[
     "pillow >= 12.0.0, < 13",
-    "stagger @ git+https://git@github.com/Jelmerro/stagger@master",
-    "tinytag >= 2.0.0, < 3"
+    "stagger @ git+https://git@github.com/Jelmerro/stagger@master"
 ]
 [tool.setuptools]
 include-package-data=true
