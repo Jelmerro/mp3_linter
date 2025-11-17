@@ -12,9 +12,38 @@ Opinionated & consistent ID3 linter & fixer
 
 ## Install
 
+### Pip
+
 ```bash
 pip install --user -I git+https://github.com/Jelmerro/mp3_linter
 ```
+
+### [Github](https://github.com/Jelmerro/mp3_linter/releases)
+
+Download a stable installer or executable for your platform from Github.
+
+### [Fedora](https://jelmerro.nl/fedora)
+
+I host a custom Fedora repository that you can use for automatic updates.
+
+```bash
+sudo dnf config-manager addrepo --from-repofile=https://jelmerro.nl/fedora/jelmerro.repo
+sudo dnf install mp3_linter
+```
+
+## Contribute
+
+You can support my work on [ko-fi](https://ko-fi.com/Jelmerro) or [Github sponsors](https://github.com/sponsors/Jelmerro).
+Another way to help is to report issues or suggest new features.
+Please try to follow recommendations by flake8 and pylint when developing.
+For an example vimrc that can auto-format based on the included linters,
+you can check out my personal [vimrc](https://github.com/Jelmerro/vimrc).
+
+## Building
+
+To create your own builds you can use [jfpm](https://github.com/Jelmerro/jfpm).
+Please clone or download both this repo and jfpm, then run `../jfpm/release_py_deps.sh`.
+This will build releases for various platforms and output them to `dist`.
 
 ## Usage
 
@@ -44,8 +73,3 @@ This can also be automatically fixed, but only for files that do not have other 
 There are also checks for duplicate tracks on a single disc, padded numbers,
 missing total count, duplicate/missing/large/wrongly-encoded covert art,
 folder structure for multi-disc albums etc.
-
-## License
-
-This project was made by [Jelmer van Arnhem](https://github.com/Jelmerro)
-and can be copied under the terms of the MIT license, see the LICENSE file for details.
